@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员界面</title>
+    <link rel="stylesheet" href="/css/element.css">
+    <script src="/js/vue.js" type="module"></script>
+    <script src="/js/element.js" type="module"></script>
+    <script src="/js/axios.js"></script>
+    <script src="/js/lodash.js"></script>
+</head>
+<body>
+    <div id ="app">
+        <el-col :span="10" :offset="4">
+    <h3 align="center">数据表</h3>
+    <hr>
+    <!--sel传数据有问题，暂时age和sex互换-->
+    <el-table style="width:100%" :data="tableform">
+        <el-table-column fixed  label="Id" width="165" prop="id"></el-table-column>
+        <el-table-column label="姓名" width="90" prop="name"></el-table-column>
+        <el-table-column label="年龄" width="90" prop="age"></el-table-column>
+        <el-table-column label="性别" width="90" prop="sex">
+            <template slot-scope="scope">
+                <div>
+                    {{scope.row.sex=="1"?"女":scope.row.sex=="0"?"男":"未知"}}
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column  label="操作" >
+            <template slot-scope="scope">
+                <el-button-group>
+                    <el-button @click="replaceClick(scope.row, scope.$index)" type="primary" >编辑</el-button>
+                    <el-button @click="deleteClick(scope.row)" type="primary" >删除</el-button>
+                </el-button-group>
+            </template>
+        </el-table-column>
+    </el-table>
+</el-col>
+        <el-dialog title="修改信息" :visible.sync="isShowDialog"  width="30%">
+      <span slot="footer" class="dialog-footer">
+        <!--<el-card class="shadow">-->
+          <el-form ref="form" :model="changeForm">
+            <el-form-item label="姓名">
+              <el-input placeholder="请输入姓名" v-model="changeForm.name"></el-input>
+            </el-form-item>
+            <el-form-item label="性别">
+              <el-select v-model="changeForm.sex">
+                <el-option label="男" value="0"></el-option>
+                <el-option label="女" value="1"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="年龄">
+              <el-input placeholder="请输入年龄" v-model="changeForm.sex"></el-input>
+            </el-form-item>
+            <el-button @click="doChange">更改信息</el-button>
+            <el-button @click="cancel">取消</el-button>
+          </el-form>
+          <!--</el-card>-->
+      </span>
+</el-dialog>
+    </div>
+</body>
+<script type="module">
+    console.log(axios);
+
+    function buildFormData(object) {
+        let formData =new FormData();
+        for(let key in object){
+            formData.append(key,object[key])
+        }
+        return formData;
+    }
+
+    var app = Vue.extend({
+        mounted(){
+            this.refresh();
+        },
+        data() {
+            return {
+                form: {
+                    name:"",
+                    sex:"",
+                    age:1,
+                },
+                tableform:[],
+                isShowDialog:false,
+                changeForm:{
+                    id:"",
+                    name:"",
+                    sex:"",
+                    age:1,
+                },
+                deleteForm:[],
+            }
+        },
+        methods: {
+            doChange(){
+                let that =this;
+                axios.post('/sq/set',this.changeForm).then((res)=>{
+                    if (res.data){
+                        that.$message.success("success");
+                    } else {
+                        that.$message.warning("fail");
+                    }
+                    that.isShowDialog=false;
+                    that.refresh();
+                });
+            },
+            cancel(){
+                this.isShowDialog=false;
+            },
+            submit(){
+                let that = this;
+                axios.post('/sq/ins',buildFormData(this.form))
+                    .then((res)=>{
+                        let r =res.data()
+                        that.$message.success(r==true?'success':'faild');
+                        if(r){
+                            this.refresh();
+                        }
+                    });
+            },
+            refresh() {
+                let that = this;
+                axios.get('/sq/sel').then((res) => {
+                    that.tableform = res.data;
+                });
+            },
+            replaceClick(r,i){
+                let tmp =_.clone(r);
+                this.changeForm=tmp;
+
+                this.isShowDialog = true;
+            },
+            deleteClick(r){
+                let tmp =_.clone(r);
+                this.deleteForm=tmp;
+                let that =this;
+                axios.post('/sq/del',this.deleteForm).then((res)=>{
+                    if (res.data){
+                        that.$message.success("success");
+                    } else {
+                        that.$message.warning("fail");
+                    }
+                    that.refresh();
+                });
+            }
+        },
+    });
+    new app().$mount('#app');
+</script>
+</html>

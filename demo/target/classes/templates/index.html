@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>sqzjs' webchat</title>
+
+    <link rel="stylesheet" href="/css/element.css">
+    <script src="/js/vue.js" type="module"></script>
+    <script src="/js/element.js" type="module"></script>
+    <script src="/js/axios.js"></script>
+    <script src="/js/lodash.js"></script>
+</head>
+<body>
+<div id="app">
+    <el-row  :gutter="20" >
+        <!--注册表单-->
+        <el-col :span="6" :offset="8">
+            <el-card class="box-card">
+                <el-form ref="form" :model="form">
+                <h3 align="center">注册</h3>
+                <hr>
+                <el-form-item  label="用户名">
+                    <el-input v-model="form.name" placeholder="请输入用户名" prefix-icon></el-input>
+                </el-form-item>
+                <el-form-item  label="年龄">
+                    <el-input v-model="form.age" placeholder="请输入年龄"></el-input>
+                </el-form-item>
+                <el-form-item label="性别">
+                    <el-select v-model="form.sex">
+                        <el-option label="男" value="0"></el-option>
+                        <el-option label="女" value="1"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-button @click="submit">提 交</el-button>
+            </el-form>
+            </el-card>
+        </el-col>
+</div>
+</body>
+<script type="module">
+    console.log(axios);
+
+    function buildFormData(object) {
+        let formData =new FormData();
+        for(let key in object){
+            formData.append(key,object[key])
+        }
+        return formData;
+    }
+
+    var app = Vue.extend({
+        mounted(){
+            this.refresh();
+        },
+        data() {
+            return {
+                form: {
+                    name:"",
+                    sex:"",
+                    age:1,
+                },
+                tableform:[],
+                isShowDialog:false,
+                changeForm:{
+                    id:"",
+                    name:"",
+                    sex:"",
+                    age:1,
+                },
+                deleteForm:[],
+            }
+        },
+        methods: {
+            doChange(){
+                let that =this;
+                axios.post('/sq/set',this.changeForm).then((res)=>{
+                    if (res.data){
+                        that.$message.success("success");
+                    } else {
+                        that.$message.warning("fail");
+                    }
+                    that.isShowDialog=false;
+                    that.refresh();
+                });
+            },
+            cancel(){
+              this.isShowDialog=false;
+            },
+            submit(){
+                let that = this;
+                axios.post('/sq/ins',buildFormData(this.form))
+                    .then((res)=>{
+                        let r =res.data()
+                        that.$message.success(r==true?'success':'faild');
+                        if(r){
+                            this.refresh();
+                        }
+                    });
+            },
+            refresh() {
+                let that = this;
+                axios.get('/sq/sel').then((res) => {
+                    that.tableform = res.data;
+                });
+            },
+            replaceClick(r,i){
+                let tmp =_.clone(r);
+                this.changeForm=tmp;
+
+                this.isShowDialog = true;
+            },
+            deleteClick(r){
+                let tmp =_.clone(r);
+                this.deleteForm=tmp;
+                let that =this;
+                axios.post('/sq/del',this.deleteForm).then((res)=>{
+                    if (res.data){
+                        that.$message.success("success");
+                    } else {
+                        that.$message.warning("fail");
+                    }
+                    that.refresh();
+                });
+            }
+        },
+    });
+    new app().$mount('#app');
+</script>
+<style>
+    #app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+    .box-card{
+        top:50%;
+    }
+
+
+
+    h3 {
+        color: #0babeab8;
+        font-size: 24px;
+    }
+
+    hr {
+        background-color: #444;
+        margin: 20px auto;
+    }
+
+    a {
+        text-decoration: none;
+        color: #aaa;
+        font-size: 15px;
+    }
+
+    a:hover {
+        color: coral;
+    }
+
+    el-button {
+        width: 80%;
+        margin-left: -50px;
+    }
+</style>
+</html>
